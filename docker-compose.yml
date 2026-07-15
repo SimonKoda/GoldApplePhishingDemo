@@ -1,0 +1,27 @@
+services:
+
+  tracker:
+
+    build: ./tracker
+    volumes:
+      - ./database:/data
+    expose:
+      - "5000"
+
+  nginx:
+
+    build: ./nginx
+    ports:
+      - "8084:80"
+    depends_on:
+      - tracker
+
+  mailservice:
+
+    build: ./mailservice
+    volumes:
+      - ./database:/data
+    env_file:
+      - ./mailservice/.env
+    profiles:
+      - tools
