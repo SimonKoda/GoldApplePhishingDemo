@@ -7,6 +7,8 @@ services:
       - ./database:/data
     expose:
       - "5000"
+    env_file:
+      - ./.env
 
   nginx:
 
@@ -21,7 +23,7 @@ services:
     build: ./mailservice
     volumes:
       - ./database:/data
-    env_file:
-      - ./mailservice/.env
     profiles:
       - tools
+    env_file:
+      - ./.env

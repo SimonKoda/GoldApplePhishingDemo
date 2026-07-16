@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import requests
 
 from flask import Flask
 from flask import request
@@ -10,6 +11,55 @@ from datetime import datetime
 app = Flask(__name__)
 
 DATABASE = "/data/phishing.db"
+#TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+#TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_TOKEN = "8764667229:AAHr91hcF7I-lXCuzoIPi_HaT9ysoLYTsIU"
+TELEGRAM_CHAT_ID = "8965212146"
+
+
+def send_telegram_notification(email, ip, click_time, token):
+
+    message = f"""
+Phishing Transition
+    
+Email:
+{email}
+
+IP:
+{ip}
+
+Date:
+{click_time}
+
+Token:
+{token}
+"""
+
+    url = (
+            f"https://api.telegram.org/"
+            f"bot{TELEGRAM_TOKEN}"
+            f"/sendMessage"
+            )
+
+    data = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message
+            }
+
+    try:
+        response = requests.post(
+            url,
+            json=data,
+            timeout=10
+            )
+        print(response.status_code,response.text)
+    
+    except Exception as e:
+        print(
+                "Telegram error:",
+                e
+                )
+
 
 def init_database():
 
@@ -88,6 +138,8 @@ def save_click(email,token,ip):
 
     conn.close()
 
+    return click_time
+
 def update_user_status(token):
 
     conn = sqlite3.connect(DATABASE)
@@ -154,23 +206,31 @@ def phishing_tracker():
         return "Invalid request",400
 
     ip = request.headers.get(
-        "X-Real-IP"
-        )
+            "X-Real-IP"
+            )
     if not ip:
 
         ip = request.remote_addr
 
-    save_click(
-        email,
-        token,
-        ip
-    )
+    click_time = save_click(
+            email,
+            token,
+            ip
+            )
 
     update_user_status(token)
+    
+    send_telegram_notification(
+            email,
+            ip,
+            click_time,
+            token
+            )
+
     return redirect(
-        "/phishing.html",
-        code=302
-        )
+            "/phishing.html",
+            code=302
+                    )
 
 if __name__ == "__main__":
 
